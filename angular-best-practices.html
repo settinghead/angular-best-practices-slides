@@ -40,35 +40,12 @@ class: center, middle
 - ## Wrap business logic into services
 - ## Controllers should only be used to set up scope and handle view interactions
 ---
-
-# Group your code into bundles (modules)
-- ### Why? Separating functionalities into modules makes it easier to isolate and troubleshoot errors during testing
-- ### Keep modularization horizontal instead of vertical
-
+# No DOM Manipulation inside Controllers
+* ## Use service and directives instead
 ---
-# Vertical Modularization
-```
-angular.module('app', []);
-angular.module('services', []);
-angular.module('filters', []);
-angular.module('controllers', ['services', 'filters']);
-...
-```
----
-#...better
-
-```
-angular.module('app', []);
-angular.module('company-api', []);
-angular.module('products', ['company-api']);
-angular.module('products', ['company-api']);
-angular.module('personnels', ['company-api']);
-...
-
-```
----
+## This controller is trying to take over the world
 ```javascript
-angular.module('awsome-app')
+angular.module('awesome-app')
   .controller('itemController', ['$scope', '$http',
     function ($scope, $http) {
 
@@ -84,7 +61,12 @@ angular.module('awsome-app')
             alert('No item for you!');
           });
       };
+      ...
+```
+---
+## ...continued
 
+```javascript
       $scope.addItem = function (item) {
         $http({method: 'POST', ...}).then(...);
       };
@@ -98,6 +80,7 @@ angular.module('awsome-app')
   }]);
 ```
 ---
+## ...better
 ```javascript
 angular.module('awsome-app')
   .service('itemRetriever', [$q, $http, function ($q) {
@@ -124,10 +107,44 @@ angular.module('awsome-app')
   }]);
 ```
 ---
-# All External References Should Come from Dependency Injections
-- ## Put or wrap global variable and constants into module(“app”).value() or module().constant()
--- Inject them as needed
+# Group your code into bundles (modules)
+- ### Why? Separating functionalities into modules makes it easier to isolate and troubleshoot errors during testing
+- ### Keep modularization horizontal instead of vertical
 
+---
+# Vertical Modularization
+```javascript
+angular.module('app', []);
+angular.module('services', []);
+angular.module('filters', []);
+angular.module('controllers', ['services', 'filters']);
+...
+```
+---
+#...better
+
+```javascript
+angular.module('app', []);
+angular.module('company-api', []);
+angular.module('products', ['company-api']);
+angular.module('personnels', ['company-api']);
+...
+```
+---
+# All External References Should Come from Dependency Injections
+- ## Put or wrap global variable and constants into angular.value() or angular.constant()
+- ## Inject them as needed
+---
+## Bad for tests
+```javascript
+  .service('myService', function () {
+      ...
+      ThirdPartyLib.externalMethod(...);
+      ...
+    });
+```
+---
+## ..better
 ```javascript
    angular.module('app')
      .factory('ThirdPartyLib', function ($window) {
@@ -139,10 +156,6 @@ angular.module('awsome-app')
       ...
     }]);
 ```
-
----
-# No DOM Manipulation inside Controllers
-* ## Use service and directives instead
 ---
 # Small Controllers, Small Services
 * ## Break controllers into smaller sub-controllers if it gets too large
@@ -152,11 +165,11 @@ angular.module('awsome-app')
 * ## Eliminate the word "and" in your service's description
 * ## Services should be loosely coupled
 ---
-
+# Too tighly coupled
 ```javascript
 angular.module('app').service('productService',
-  ['$http', $cartService, $statsEngine
-    function ($http, $theCart, $statsEngine) {
+  ['$http', 'cartService', 'statsEngine'
+    function ($http, CartService, statsEngine) {
       this.getProduct = function () {...}
       this.updateProduct = function (id, product) {...}
       this.getProductStatistics = function (id) {...}
@@ -164,7 +177,9 @@ angular.module('app').service('productService',
       ...
   }]);
 ```
+- ## Would be combersome to mock all the dependencies in tests
 ---
+## A Better Approach
 ```javascript
   angular.module('app')
    .service('productLoader',
@@ -193,6 +208,8 @@ angular.module('app').service('productService',
 - ## Define/divide resource loading by routes. Expose state on routes
 - ## Good for E2E testing
 ---
+## Route Definition
+
 ```javascript
 angular.module("app")
   .config(["$routeProvider",
@@ -215,30 +232,41 @@ angular.module("app")
   }]);
 ```
 ---
+## ...continued
 ```javascript
 angular.module("app")
-  .controller('itemController', ['products',
-    function (products) {
-      $scope.products = products;
+  .controller('itemController', ['items',
+    function (items) {
+      $scope.items = items;
   }]);
 ```
+- ## "items" will be available when controller is initialized
 ---
 class: center, middle
 # Tips
 ---
 class: center, middle
-### Use $window, $location, $interval, instead of window, location, setInterval
+## Use $window, $location, $interval, instead of window, location, setInterval
 So that dependencies are isolated
 ---
 class: center, middle
-### Use $log.info(), .debug(), .error(), etc. instead of console.log
+## Use $log.info(), .debug(), .error(), etc. instead of console.log
 So that your tests won't be litered with log messages
 ---
-### angular.copy, angular.extend, angular.forEach
+class: center, middle
+## Use angular.copy, angular.extend, angular.forEach
 ---
 class: center, middle
-### Use $interval instead of $timeout
+## Wrap external js library into their own minimal services
+---
+class: center, middle
+## Use $interval instead of $timeout
 So that E2E testing won’t return a timeout error
+---
+# Thank you
+
+- ### Slides: http://github.com/settinghead/angular-best-practices-slides
+- ### Or follow me [@settinghead](http://www.twitter.com/settinghead) or [@rangleio](http://www.twitter.com/rangleio)
 ---
 # References
 
@@ -247,11 +275,7 @@ So that E2E testing won’t return a timeout error
 - Miško Hevery, Writing Testable Code, http://googletesting.blogspot.ca/2008/08/by-miko-hevery-so-you-decided-to.html
 - Mark Ethan Trostler, Testable JavaScript, O'Reilly Media, Jan 2013
 
----
-# Thank you
 
-- ### Slides: http://github.com/settinghead/angular-best-practices-slides
-- ### Or follow me (@settinghead) or @rangle
     </textarea>
     <script src="bower_components/remark/out/remark.js" type="text/javascript">
     </script>
